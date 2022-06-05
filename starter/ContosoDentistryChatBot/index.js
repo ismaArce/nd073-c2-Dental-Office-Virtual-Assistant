@@ -80,14 +80,14 @@ const LuisConfiguration = {
     endpoint: process.env.LuisAPIHostName,
 }
 
-// const SchedulerConfiguration = {
-//     SchedulerEndpoint: process.env.SchedulerEndpoint
-// }
+const SchedulerConfiguration = {
+    SchedulerEndpoint: process.env.SchedulerEndpoint
+}
 // //pack each service configuration into 
 const configuration = {
     QnAConfiguration,
     LuisConfiguration,
-    // SchedulerConfiguration
+    SchedulerConfiguration
 }
 
 // Create the main dialog.

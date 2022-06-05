@@ -4,7 +4,7 @@
 const { ActivityHandler, MessageFactory } = require('botbuilder');
 
 const { QnAMaker } = require('botbuilder-ai');
-// const DentistScheduler = require('./dentistscheduler');
+const DentistScheduler = require('./dentistscheduler');
 const IntentRecognizer = require("./intentrecognizer")
 
 class DentaBot extends ActivityHandler {
@@ -17,7 +17,7 @@ class DentaBot extends ActivityHandler {
         this.QnAMaker = new QnAMaker(configuration.QnAConfiguration, qnaOptions)
        
         // create a DentistScheduler connector
-      
+        this.dentistScheduler = new DentistScheduler(configuration.SchedulerConfiguration)
         // create a IntentRecognizer connector
         this.intentRecognizer = new IntentRecognizer(configuration.LuisConfiguration);
 
@@ -38,61 +38,71 @@ class DentaBot extends ActivityHandler {
             //  return;
             // }
             // else {...}
-            if (LuisResult.luisResult.prediction.topIntent === "ScheduleAppointment" &&
-            LuisResult.intents.ScheduleAppointment.score > 0.6 &&
-            LuisResult.entities.$instance){
-                var datetime = [];
-                var getDateTimeOfAppointment = "";
-                if (LuisResult.entities.$instance.date && LuisResult.entities.$instance.date[0]){
-                    datetime.push(LuisResult.entities.$instance.date[0].text);
-                }
-                if (LuisResult.entities.$instance.time && LuisResult.entities.$instance.time[0]){
-                    datetime.push(LuisResult.entities.$instance.time[0].text);
-                }
-
-                if (datetime.length > 1){
-                    getDateTimeOfAppointment = "You can schedule your appointment on " 
-                + datetime[0] + " at " + datetime[1] + ".";
-                }else{
-                    getDateTimeOfAppointment = "You can schedule your appointment on/at " 
-                + datetime[0] + ".";
-                }
-                
-                console.log(getDateTimeOfAppointment);
-                await context.sendActivity(getDateTimeOfAppointment);
-                await next();
-                return;
-            }
+            
+            // console.log(getAvailable);
 
             if (LuisResult.luisResult.prediction.topIntent === "GetAvailability" &&
             LuisResult.intents.GetAvailability.score > 0.6 &&
             LuisResult.entities.$instance){
                 var datetime = [];
-                var getDateTimeOfAvailability = "";
-                if (LuisResult.entities.$instance.date && LuisResult.entities.$instance.date[0]){
-                    datetime.push(LuisResult.entities.$instance.date[0].text);
-                }
+                // var getDateTimeOfAvailability = "";
+                // if (LuisResult.entities.$instance.date && LuisResult.entities.$instance.date[0]){
+                //     datetime.push(LuisResult.entities.$instance.date[0].text);
+                // }
                 if (LuisResult.entities.$instance.time && LuisResult.entities.$instance.time[0]){
                     datetime.push(LuisResult.entities.$instance.time[0].text);
                 }
-
-                if (datetime.length > 1){
-                    getDateTimeOfAvailability = "Yes. The dentist will be available on " 
-                + datetime[0] + " at " + datetime[1] + ".";
-                }else{
-                    getDateTimeOfAvailability = "Yes. The dentist will be available on/at " 
-                + datetime[0] + ".";
-                }
                 
-                console.log(getDateTimeOfAvailability);
-                await context.sendActivity(getDateTimeOfAvailability);
+                const getAvailable = await this.dentistScheduler.getAvailability();
+
+                // if (datetime.length > 1){
+                //     getDateTimeOfAvailability = "Yes. The dentist will be available on " 
+                // + datetime[0] + " at " + datetime[1] + ".";
+                // }else{
+                //     getDateTimeOfAvailability = "Yes. The dentist will be available on/at " 
+                // + datetime[0] + ".";
+                // }
+                
+                // console.log(getDateTimeOfAvailability);
+                await context.sendActivity(getAvailable);
                 await next();
                 return;
             }
 
 
+            if (LuisResult.luisResult.prediction.topIntent === "ScheduleAppointment" &&
+            LuisResult.intents.ScheduleAppointment.score > 0.6 &&
+            LuisResult.entities.$instance){
+                var datetime = [];
+                // var getDateTimeOfAppointment = "";
+                // if (LuisResult.entities.$instance.date && LuisResult.entities.$instance.date[0]){
+                //     datetime.push(LuisResult.entities.$instance.date[0].text);
+                // }
+                if (LuisResult.entities.$instance.time && LuisResult.entities.$instance.time[0]){
+                    datetime.push(LuisResult.entities.$instance.time[0].text);
+                }
+
+                // if (datetime.length > 1){
+                //     getDateTimeOfAppointment = "You can schedule your appointment on " 
+                // + datetime[0] + " at " + datetime[1] + ".";
+                // }else{
+                //     getDateTimeOfAppointment = "You can schedule your appointment on/at " 
+                // + datetime[0] + ".";
+                // }
+                
+                // console.log(getDateTimeOfAppointment);
+                var time = LuisResult.entities.$instance.time[0].text;
+                const scheduleAppointment = await this.dentistScheduler.scheduleAppointment(time);
+                await context.sendActivity(scheduleAppointment);
+                await next();
+                return;
+            }
+
+            
+
+
             if (qnaResults[0]) {
-                console.log(qnaResults[0])
+                // console.log(qnaResults[0])
                 await context.sendActivity(`${qnaResults[0].answer}`);
              }
              else {
